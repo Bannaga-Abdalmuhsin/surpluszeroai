@@ -1,6 +1,6 @@
 # Official Data Catalogue
 
-This catalogue records the Saudi public datasets used to calibrate SurplusZero AI. It distinguishes annual strategic statistics from operational telemetry.
+This catalogue records the Saudi public datasets used to calibrate SurplusZero AI. It distinguishes annual strategic statistics from operational telemetry. These sources describe the Kingdom's electricity system and flexibility opportunity; none of the reviewed public files alone provides the synchronized 5–15 minute generation, demand, tie-line, constraint, and curtailment data required to calculate a live national surplus.
 
 ## National Open Data API
 

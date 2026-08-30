@@ -1,204 +1,115 @@
 # SurplusZero AI
 
-**Predictive load orchestration for near-zero avoidable renewable-energy curtailment in Saudi Arabia.**
+**Kingdom-wide predictive orchestration for near-zero avoidable electricity surplus and curtailment.**
 
-[Open the SurplusZero dashboard](https://bannaga-abdalmuhsin.github.io/surpluszeroai/)
+[Open the live national simulator](https://bannaga-abdalmuhsin.github.io/surpluszeroai/)
 
-SurplusZero AI converts distributed flexible loads into a **Virtual Energy Reservoir**. It forecasts periods when available electricity may exceed normal demand, reserves suitable flexible loads before the event, dispatches them when needed, verifies their actual response, and reallocates any shortfall.
+SurplusZero AI is a grid-support decision and dispatch layer. It predicts where and when electricity supply may exceed demand and network capacity, then coordinates the least-cost feasible response: interregional transfer, safe generation redispatch, storage charging, and productive flexible demand. Curtailment is the last resort.
 
-> Every usable surplus kilowatt-hour should be directed to its highest-value available use before curtailment becomes necessary.
+> Surplus is a grid condition—not “solar electricity assigned to a load.” Utility solar, wind, gas, and other generators inject into the interconnected system. SurplusZero controls eligible resources in the right electrical zone to correct the combined system imbalance.
 
-## The challenge
+## The problem
 
-Saudi Arabia is rapidly expanding renewable generation. By the end of 2024, the Kingdom had **6,551 MW** of operating renewable capacity: **6,151 MW solar** and **400 MW wind**, according to GASTAT's *Renewable Energy Statistics 2024*.
+At any interval, a surplus can result from the combined generation fleet, imports, demand changes, exports, storage state, plant constraints, and transmission limits. It is not limited to solar and it may be national or trapped inside a grid zone.
 
-As variable renewable capacity increases, generation can sometimes exceed the demand, storage, export, or network capacity available at a particular time and location. If the system cannot safely absorb the energy, renewable output may need to be curtailed.
-
-SurplusZero AI addresses the inverse of conventional demand management:
-
-| Condition | Conventional response | SurplusZero response |
-|---|---|---|
-| Demand exceeds available supply | Reduce or shift consumption | Not the primary use case |
-| Available generation exceeds normal demand | Curtail generation or charge available storage | Create and coordinate useful flexible demand |
-
-The public datasets reviewed do **not** publish historical Saudi hourly curtailment. This project therefore does not claim that a measured national curtailment level already exists. It addresses the operational risk associated with increasing variable renewable penetration.
-
-## Consequences of unmanaged surplus
-
-- Renewable generation may be curtailed.
-- Installed renewable assets may be underutilized.
-- Frequency, voltage, congestion, and reserve management become more complex.
-- A valuable zero-fuel-cost kilowatt-hour is lost instead of being converted into cooling, water, mobility, storage, industrial output, or hydrogen.
-- Exclusive dependence on batteries can increase the cost of absorbing surplus.
-- Midday renewable energy may be lost while evening demand still requires stored energy or dispatchable generation.
+Unmanaged surplus can cause renewable curtailment, inefficient thermal operation, congestion, weaker frequency control, lost zero-fuel-cost energy, and later reliance on more expensive generation. Saudi public data establishes capacity, annual demand, peak load, customers, and sector structure, but does not publish the complete real-time operational series needed to claim measured national surplus.
 
 ## The solution
 
-SurplusZero AI coordinates a portfolio of flexible resources:
-
-- Building and district cooling
-- Chilled-water and ice storage
-- Water pumping and desalination
-- Cold storage and refrigeration
-- Electric-vehicle charging
-- Battery energy storage
-- Flexible industrial processes
-- Hydrogen electrolysers
-
-Each resource declares its available power, energy capacity, timing, response speed, operational limits, location, cost, and confidence. The optimizer selects a safe portfolio that can absorb the predicted surplus at the lowest system cost.
-
-## How it works
-
-```mermaid
-flowchart TD
-    A["Official energy data"] --> D["Demand and generation forecasts"]
-    B["Weather and grid signals"] --> D
-    C["Asset telemetry"] --> E["Flexibility registry"]
-    D --> F["Surplus forecast"]
-    E --> G["Dispatch optimizer"]
-    F --> G
-    G --> H["Flexible loads"]
-    H --> I["Measurement and verification"]
-    I --> G
-```
-
-1. **Calibrate** national and regional baselines using official Saudi data.
-2. **Forecast** demand and renewable generation at operational time resolution.
-3. **Detect** a probable surplus window and quantify uncertainty.
-4. **Reserve** more verified flexibility than the central forecast requires.
-5. **Optimize** resources by location, speed, cost, capacity, and constraints.
-6. **Dispatch** precise load-increase instructions.
-7. **Measure** the delivered increase against each asset's baseline.
-8. **Reallocate** underdelivery to standby resources.
-9. **Report** verified absorbed energy and avoided curtailment potential.
-
-## Core equations
-
-Expected surplus:
+SurplusZero builds a **national flexibility map** and operates a closed loop:
 
 ```text
-P_surplus(t) = max(0,
-  P_generation(t)
-  - P_demand(t)
-  - P_export(t)
-  - P_scheduled_storage(t)
+Forecast → Locate → Reserve → Dispatch → Measure → Reallocate
+```
+
+For each grid zone and 5–15 minute interval it:
+
+1. forecasts demand and production by source;
+2. runs a network-aware balance and identifies probable excess;
+3. checks transfer capacity to deficit zones;
+4. evaluates safe redispatch of controllable generators;
+5. schedules batteries and other storage;
+6. activates contracted productive loads such as cooling, water, EV charging, cold storage, industry, and electrolysers;
+7. verifies response from meters and reallocates any shortfall; and
+8. recommends curtailment only for the residual that cannot be resolved safely.
+
+## Correct system balance
+
+For zone `z` and interval `t`:
+
+```text
+initial_excess = max(0,
+  generation_all_sources + imports - demand - scheduled_exports
+)
+
+residual = max(0,
+  initial_excess
+  - feasible_transfer
+  - feasible_generation_redispatch
+  - available_storage_charging
+  - verified_flexible_load
 )
 ```
 
-Required reserved flexibility:
+Network constraints, ramp limits, minimum stable generation, reserve obligations, storage state of charge, asset limits, forecast uncertainty, and security rules constrain every action. The result is a recommendation to the authorized system operator—not autonomous control of the national grid.
 
-```text
-P_reserved(t) >= P_forecast_surplus(t) + P_forecast_uncertainty(t)
-```
+## Inputs
 
-Verified response from asset `i`:
+| Input group | Production source | Prototype status |
+|---|---|---|
+| Generation by source and plant | System operator/utility telemetry | Interface + scenario assumption |
+| Demand by grid zone | SCADA/EMS and smart meters | Official baselines + scenario |
+| Imports, exports and tie-line flows | EMS/market data | Interface + scenario assumption |
+| Network limits and outages | EMS/network model | Interface + scenario assumption |
+| Redispatch capability | Generator offers and plant constraints | Interface + scenario assumption |
+| Storage state and charging limits | Storage telemetry | Simulated assets |
+| Flexible-load availability | Asset meters and contracts | Simulated registry |
+| Weather and renewable forecast | Weather observations/forecast | Actual archived weather in local PoC |
+| Annual capacity, peak and consumption | Saudi official open data | Actual published data |
 
-```text
-P_delivered_i(t) = P_actual_i(t) - P_baseline_i(t)
-```
+See [solution inputs](docs/solution-inputs.md) and the [official data catalogue](docs/data-sources.md).
 
-Underdelivery to be reallocated:
+## Evidence boundary
 
-```text
-P_shortfall(t) = P_requested(t) - P_delivered(t)
-```
+- **Official:** published government statistics used for structural calibration.
+- **Measured:** pilot meter or participating-asset telemetry.
+- **Calculated:** deterministic result derived from declared inputs.
+- **Forecast:** model output with uncertainty.
+- **Assumed:** transparent scenario value awaiting operational access.
 
-## What makes it different
+The national dashboard is a digital-twin scenario, not a claim of live Saudi grid operation. The earlier Riyadh 5 MW solar example remains a local proof that forecasting, dispatch, metering, and shortfall reallocation can work; it is not the scope or national result of SurplusZero.
 
-The key innovation is not a dashboard or a single battery controller. It is a closed-loop, multi-sector orchestration system:
+## Why it is special and doable
 
-```text
-Forecast → Reserve → Dispatch → Measure → Reallocate
-```
+The innovation is a verified flexibility exchange across sectors, combined with a grid action waterfall. A command is never counted as success: only metered response is credited, and underdelivery is reassigned automatically. The hackathon prototype can demonstrate the full decision logic using official structural data, actual weather, explicit assumptions, and simulated operational feeds. A production pilot then replaces assumed feeds zone by zone without changing the control workflow.
 
-A command is not counted as success. Only metered additional consumption is counted as absorbed surplus. When a resource underdelivers, the optimizer immediately transfers the missing allocation to a standby resource.
+## Success measures
 
-## Data-first design
+- residual avoidable curtailment (MWh)
+- share of initial excess resolved by each action
+- forecast error and uncertainty coverage
+- response and reallocation time
+- verified delivery rate
+- cost per resolved MWh
+- constraint and customer-override violations
+- emissions and fuel avoided where applicable
 
-SurplusZero separates every input and result into five provenance classes:
+## Claim boundary
 
-| Class | Meaning |
-|---|---|
-| Official | Published by a Saudi government authority |
-| Measured | Received from a meter, sensor, or participating asset |
-| Calculated | Derived directly from documented inputs |
-| Forecast | Produced by a declared forecasting method |
-| Assumed | Scenario input awaiting pilot validation |
-
-The prototype is calibrated with actual Ministry of Energy, GASTAT, and SERA data. Annual official statistics are not misrepresented as real-time grid telemetry. Operational forecasts use weather observations and measured pilot data; production deployment would accept utility/grid signals through the same interfaces.
-
-## Initial official datasets
-
-| Dataset | Period | Primary use |
-|---|---:|---|
-| Renewable Energy Statistics | 2019–2024 | Project, technology, capacity, and LCOE baseline |
-| Peak Load | 2017–2024 | National demand calibration |
-| Consumer numbers and energy sales | 2023–2024 | Customer and market baseline |
-| Electricity consumption by category | 2023–2024 | Flexible-load opportunity by sector |
-| Total electricity users | 2017–2024 | Connected-customer growth |
-| Regional seasonal electricity consumption | Multi-year | Regional and seasonal demand calibration |
-| Licensed generation capacity by region | Multi-year | Regional supply limits |
-| Electricity tariffs | Current publication | Incentive and economic calculations |
-
-Full source links and dataset identifiers are maintained in [docs/data-sources.md](docs/data-sources.md).
-
-## Doable prototype
-
-The first demonstration is a **Surplus Absorption Zone**, not a national-grid controller.
-
-It will include:
-
-- One Saudi regional scenario
-- Actual official energy datasets
-- Actual weather observations
-- A 15-minute demand and renewable-generation forecast
-- A registry of buildings, water pumps, EV chargers, batteries, cold storage, and an optional electrolyser
-- A dispatch optimizer
-- One safe physical demonstration load with power measurement
-- Automatic shortfall reallocation
-- A dashboard showing source provenance and verified results
-
-### Demonstration sequence
-
-1. The platform predicts a surplus window.
-2. It reserves flexible loads plus an uncertainty margin.
-3. The event begins and selected assets are dispatched.
-4. One asset intentionally underdelivers.
-5. Metering detects the shortfall.
-6. The optimizer reallocates it to a standby resource.
-7. The dashboard reports only verified absorbed energy.
-
-## Success metrics
-
-- Surplus forecast error
-- Verified absorption rate
-- Flexibility delivery rate
-- Response time
-- Available flexible MW and MWh
-- Avoided curtailment potential
-- Reallocation success rate
-- Customer override rate
-- Comfort or process-limit violations
-- Incentive cost per absorbed kWh
-- Battery degradation cost
-
-## Technical boundary
-
-SurplusZero aims for **near-zero avoidable curtailment**, not an absolute guarantee of zero curtailment. Grid faults, local congestion, communications failure, full storage, insufficient flexibility, or system-security constraints can still make curtailment necessary.
+The goal is **near-zero avoidable surplus/curtailment**, not a guarantee of absolute zero. Faults, congestion, minimum-generation constraints, insufficient flexible capacity, full storage, communications failure, and grid-security requirements can make curtailment necessary.
 
 ## Documentation
 
 - [Concept and methodology](docs/methodology.md)
 - [System architecture](docs/architecture.md)
+- [Solution inputs](docs/solution-inputs.md)
 - [Official data catalogue](docs/data-sources.md)
 - [Prototype and roadmap](docs/roadmap.md)
-- [Run the Riyadh data pipeline](docs/running-the-pipeline.md)
+- [Run the local Riyadh proof-of-control](docs/running-the-pipeline.md)
 
 ## Project status
 
-**Concept validation and hackathon prototype planning.**
-
-No production grid connection, measured national curtailment result, or verified national saving is claimed at this stage.
+Hackathon prototype and national digital-twin design. No live national grid connection or measured national saving is claimed.
 
 ## License
 

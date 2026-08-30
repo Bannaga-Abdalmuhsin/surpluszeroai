@@ -1,94 +1,69 @@
-# Concept and Methodology
+# Concept and methodology
 
-## Problem statement
+## System interpretation
 
-As variable renewable generation grows, available generation can exceed the demand, storage, export, or network capability available at a particular time and location. When the energy cannot be absorbed safely, renewable output may be curtailed.
+SurplusZero manages the combined electricity balance, not the output of one technology. Grid-connected solar has no dedicated destination: its output joins all other injections. The platform therefore observes a national or zonal imbalance and dispatches resources whose electrical location and operating constraints make them useful.
 
-Saudi public datasets establish renewable capacity, electricity consumption, peak load, customer counts, and sector composition, but do not publish operational curtailment history at sub-hourly resolution. SurplusZero therefore addresses a forward-looking operational challenge without inventing a historical national curtailment claim.
+## Detection
 
-## Virtual Energy Reservoir
+For grid zone `z` and interval `t`:
 
-SurplusZero treats flexible consumption as a portfolio capable of storing or converting energy:
+```text
+E0(z,t) = max(0, G(z,t) + I(z,t) - D(z,t) - X(z,t))
+```
 
-| Resource | Converted value |
+`G` is scheduled/forecast production from every source; `I` and `X` are feasible imports and scheduled exports; `D` is demand. Reserve is not subtracted as consumed energy. Instead, reserve obligations constrain generation schedules and how far a unit may be redispatched.
+
+The engine must solve this across network zones because a Kingdom-wide energy balance can conceal local congestion.
+
+## Action waterfall
+
+The optimizer chooses a secure, least-cost combination rather than blindly applying a fixed order. A transparent operational waterfall for the prototype is:
+
+1. transfer to a connected deficit zone within line limits;
+2. reduce controllable generation within ramp, reserve, emissions, and minimum-stable-output limits;
+3. charge available storage;
+4. increase contracted productive demand;
+5. use feasible export opportunity; and
+6. curtail the unresolved residual.
+
+```text
+E_residual = max(0, E0 - T - R - B - F - X_extra)
+```
+
+Here `T` is transfer, `R` is safe redispatch, `B` is storage charging, and `F` is verified flexible load. Each term is capped by physical and contractual availability in that interval.
+
+## Forecast and robustness
+
+Forecasts cover demand, solar, wind, generator availability, and asset response. The system evaluates multiple uncertainty scenarios and reserves enough compatible flexibility for a selected confidence level. It must preserve spinning/contingency reserve and N-1 security; “zero surplus” never overrides system security.
+
+## Productive flexible demand
+
+| Resource | Energy converted or shifted |
 |---|---|
-| Building pre-cooling | Thermal energy |
-| District cooling | Chilled water or ice |
-| Water pumping | Stored water |
-| EV charging | Mobility |
-| Battery | Electrical energy |
+| Building/district pre-cooling | Thermal energy |
+| Water pumping/desalination | Stored or produced water |
 | Cold storage | Thermal inventory |
-| Industry | Useful production |
-| Electrolyser | Hydrogen |
+| EV fleet charging | Mobility |
+| Batteries | Electrical energy |
+| Flexible industry | Useful output |
+| Electrolysers | Hydrogen |
 
-## Operating cycle
+Each resource supplies location, capacity, energy window, ramp time, rebound effect, operational constraints, price, telemetry health, and delivery confidence.
 
-1. Ingest official baselines and live/measured inputs.
-2. Forecast demand and generation with uncertainty.
-3. Identify the surplus window.
-4. Request flexibility offers from eligible assets.
-5. Reserve capacity above the central forecast.
-6. Optimize and dispatch.
-7. Measure delivered response.
-8. Reallocate shortfall.
-9. Settle incentives and publish an auditable result.
-
-## Optimization formulation
-
-For interval `t`, expected surplus is:
+## Verification
 
 ```text
-S(t) = max(0, G(t) - D(t) - X(t) - B_scheduled(t))
-```
-
-Reserve requirement:
-
-```text
-sum(R_i(t)) >= S_forecast(t) + U(t)
-```
-
-A simplified objective is:
-
-```text
-minimize:
-  curtailment_cost
-  + incentive_cost
-  + battery_degradation
-  + comfort_deviation
-  + network_penalty
-  + non_delivery_risk
-```
-
-Subject to power, energy, timing, ramp, state-of-charge, comfort, process, network, and availability constraints.
-
-## Baseline and verification
-
-```text
-delivered_i(t) = actual_i(t) - baseline_i(t)
+delivered_i(t) = max(0, actual_i(t) - approved_baseline_i(t))
 shortfall_i(t) = max(0, requested_i(t) - delivered_i(t))
 ```
 
-Only verified response contributes to the absorption KPI. Baseline methods must be documented and tested to prevent overstating performance.
+Only meter-verified incremental demand or charging is credited. Shortfall is immediately offered to standby assets. Settlement must guard against inflated baselines and double counting.
 
-## Data provenance
+## Objective
 
-All displayed values carry one of these labels:
+The optimization minimizes expected curtailment, redispatch cost, flexibility incentives, storage degradation, emissions, customer impact, congestion risk, and nondelivery risk, subject to network, plant, reserve, ramp, state-of-charge, comfort, process, and communications constraints.
 
-- **Official**
-- **Measured**
-- **Calculated**
-- **Forecast**
-- **Assumed**
+## Evidence and claim boundary
 
-## Primary KPIs
-
-```text
-absorption_rate = verified_absorbed_energy / available_surplus_energy
-delivery_rate   = delivered_energy / committed_energy
-```
-
-Additional KPIs include forecast error, response time, reallocation success, comfort violations, overrides, incentive cost, and battery degradation.
-
-## Claim boundary
-
-The target is **near-zero avoidable curtailment**. Absolute zero cannot be guaranteed because faults, congestion, unavailable flexibility, full storage, communication failures, and security requirements may necessitate curtailment.
+Official annual data calibrates scale and sector opportunity; it cannot substitute for operational SCADA. The prototype labels official, measured, calculated, forecast, and assumed values separately. The target is near-zero **avoidable** curtailment. Absolute zero cannot be promised.

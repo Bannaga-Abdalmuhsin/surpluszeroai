@@ -1,91 +1,37 @@
-# System Architecture
+# System architecture
 
-## Design objective
+## Two control levels
 
-SurplusZero AI creates a closed-loop connection between a predicted renewable surplus and verified additional useful demand.
+SurplusZero has a national/zonal decision layer and an asset layer. The first determines where an excess exists and which grid actions are feasible. The second aggregates and verifies controllable loads. This separation prevents a local solar forecast from being mistaken for a national grid signal.
 
 ```mermaid
 flowchart TD
-    A["Official baselines"] --> D["Data platform"]
-    B["Weather and grid signals"] --> D
-    C["Asset telemetry"] --> D
-    D --> E["Forecast engine"]
-    D --> F["Flexibility registry"]
-    E --> G["Surplus detector"]
-    F --> H["Dispatch optimizer"]
-    G --> H
-    H --> I["Edge controllers"]
-    I --> J["Flexible assets"]
-    J --> K["Measurement and verification"]
-    K --> H
+    A["EMS/SCADA + forecasts"] --> B["Zonal balance and network constraints"]
+    B --> C["Security-constrained action optimizer"]
+    D["Flexibility registry"] --> C
+    C --> E["Operator approval and dispatch"]
+    E --> F["Generators, storage and flexible loads"]
+    F --> G["Metering and verification"]
+    G --> C
 ```
 
-## Components
+## Core services
 
-### Data ingestion
-
-Imports government CSV/XLSX/API data, weather observations, asset telemetry, and grid or scenario signals. Each record carries source, timestamp, unit, geography, frequency, and provenance class.
-
-### Forecast engine
-
-Produces 15-minute demand and renewable-generation forecasts with uncertainty bands. The initial model should prioritize transparent methods such as gradient boosting or classical time-series forecasting over unnecessary model complexity.
-
-### Flexibility registry
-
-Each asset publishes:
-
-- Available power and energy
-- Earliest start and latest finish
-- Minimum run/rest time
-- Ramp and response time
-- Location or network zone
-- Comfort/process constraints
-- Activation cost
-- Delivery confidence
-- Telemetry status
-
-### Surplus detector
-
-```text
-surplus = max(0,
-  generation
-  - demand
-  - exports
-  - scheduled_storage
-)
-```
-
-### Dispatch optimizer
-
-A linear or mixed-integer optimizer minimizes curtailment, incentives, degradation, comfort deviation, and network penalties subject to asset and system constraints.
-
-### Edge control
-
-A site gateway receives dispatch instructions, applies local safety and comfort rules, supports manual override, and reports measured response. Grid safety and local equipment protections always override optimization.
-
-### Measurement and verification
-
-Delivered flexibility is the metered load increase relative to an approved baseline. Underdelivery is reallocated to standby resources.
-
-## Security and control boundary
-
-- Authenticated and encrypted communication
-- Role-based access
-- Signed or traceable dispatch instructions
-- Local failsafe behavior
-- Manual override
-- Audit log
-- No direct control without asset-owner and system authorization
-- No bypass of protection, grid-code, or equipment safety controls
-
-## Suggested prototype stack
-
-| Layer | Option |
+| Service | Responsibility |
 |---|---|
-| Database | PostgreSQL / Supabase |
-| Forecasting and optimization | Python |
-| API | FastAPI |
-| Dashboard | React |
-| Messaging | MQTT or secure REST |
-| Edge device | ESP32 or Raspberry Pi |
-| Visualization | Load curves, map, registry, dispatch ledger |
+| Data gateway | Normalize generation, demand, tie lines, weather, constraints, offers, and meters with provenance |
+| Forecast engine | Produce zonal demand and generation distributions at 5–15 minute resolution |
+| Network-aware detector | Locate excess that may be hidden by the national aggregate |
+| Flexibility registry | Maintain resource location, capacity, energy, ramp, constraints, price, and confidence |
+| Action optimizer | Co-optimize transfer, redispatch, storage, flexible load, export, and residual curtailment |
+| Operator console | Explain, approve, reject, or modify recommendations |
+| Dispatch gateway | Send authenticated instructions to authorized plants, aggregators, and sites |
+| Measurement/settlement | Verify response, reallocate shortfall, calculate KPIs, and preserve audit evidence |
+
+## Security boundary
+
+Grid and equipment protection always override optimization. Production use requires operator authorization, role-based access, encryption, signed instructions, local fail-safe logic, manual override, telemetry-quality checks, replay protection, and an immutable audit trail. The hackathon version is advisory and simulated except for any explicitly connected safe demonstration asset.
+
+## Prototype stack
+
+Python supplies deterministic balance logic and later forecasting/optimization; FastAPI can expose interfaces; PostgreSQL/TimescaleDB stores time series and provenance; MQTT or secure REST connects authorized edge gateways; and the current static dashboard demonstrates the national action waterfall.

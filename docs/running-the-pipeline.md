@@ -1,4 +1,6 @@
-# Running the Riyadh Data Pipeline
+# Running the Local Riyadh Proof-of-Control
+
+This pipeline is a local solar-plus-load control example. It validates ingestion, forecasting, dispatch, metering logic, and shortfall reallocation. It is not the national SurplusZero balance model; the national model includes all generation sources and network-zone actions in `surpluszero.national`.
 
 ```bash
 python -m venv .venv

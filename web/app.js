@@ -1,5 +1,78 @@
-const svg=document.querySelector('#chart'),W=900,H=285,pad=18;let base;
-const path=(r,k,m)=>r.map((p,i)=>`${i?'L':'M'} ${pad+i*(W-2*pad)/(r.length-1)} ${H-p[k]/m*(H-30)}`).join(' ');
-function draw(r){const m=Math.max(1,...r.flatMap(x=>[x.renewable_mw,x.demand_mw,x.surplus_mw]));svg.innerHTML='';for(let y=0;y<=5;y++){let py=H-y/5*(H-30);svg.innerHTML+=`<line x1="${pad}" y1="${py}" x2="${W-pad}" y2="${py}" stroke="#173247"/>`}svg.innerHTML+=`<path d="${path(r,'surplus_mw',m)} L ${W-pad} ${H} L ${pad} ${H}Z" fill="#31d6c422"/><path d="${path(r,'renewable_mw',m)}" fill="none" stroke="#ffc75a" stroke-width="3"/><path d="${path(r,'demand_mw',m)}" fill="none" stroke="#55a7ff" stroke-width="3"/><path d="${path(r,'surplus_mw',m)}" fill="none" stroke="#31d6c4" stroke-width="2"/>`}
-function simulate(){const ps=+solarScale.value/100,pd=+demandScale.value/100,pf=+flexScale.value/100,u=+uncertainty.value/100;let rows=base.intervals.map(x=>({...x,renewable_mw:x.renewable_mw*ps,demand_mw:x.demand_mw*pd,surplus_mw:Math.max(0,x.renewable_mw*ps-x.demand_mw*pd)}));let surplus=rows.reduce((a,x)=>a+x.surplus_mw*.25,0),power=base.assets.reduce((a,x)=>a+x.capacity_mw,0)*pf,energy=base.assets.reduce((a,x)=>a+x.energy_mwh,0)*pf,absorbed=Math.min(energy,rows.reduce((a,x)=>a+Math.min(x.surplus_mw*(1+u),power)*.25,0),surplus);sv.textContent=(5*ps).toFixed(1)+' MW';dv.textContent=(2.2*pd).toFixed(1)+' MW';fv.textContent=power.toFixed(1)+' MW';uv.textContent=(u*100).toFixed(0)+'%';ss.textContent=surplus.toFixed(3);sa.textContent=absorbed.toFixed(3);su.textContent=(surplus-absorbed).toFixed(3);sr.textContent=(surplus?100*absorbed/surplus:100).toFixed(1);draw(rows)}
-fetch('web/data/demo.json').then(r=>r.json()).then(d=>{base=d;document.querySelector('.notice span').textContent=d.claim_boundary;const k=d.dispatch_summary;document.querySelectorAll('.cards strong').forEach((x,i)=>x.firstChild.textContent=[k.available_surplus_mwh,k.verified_absorbed_mwh,k.absorption_rate_pct,k.dispatch_cost_sar][i]+' ');const max=Math.max(...d.assets.map(x=>x.capacity_mw));assets.innerHTML=d.assets.map(x=>`<div class="asset"><label>${x.type.replaceAll('_',' ')}</label><div class="track"><i style="width:${100*x.capacity_mw/max}%"></i></div><b>${x.capacity_mw} MW</b></div>`).join('');simulate()});[solarScale,demandScale,flexScale,uncertainty].forEach(x=>x.oninput=simulate);reset.onclick=()=>{solarScale.value=demandScale.value=flexScale.value=100;uncertainty.value=15;simulate()};
+const $ = id => document.getElementById(id);
+const fmt = value => Math.round(value).toLocaleString('en-US');
+const baseline = {
+  generation: 68400, demand: 66500, transfer: 350,
+  redispatch: 450, storage: 300, flex: 650
+};
+const resources = [
+  ['Interregional transfer', 'Move excess to a connected deficit zone'],
+  ['Generator redispatch', 'Reduce controllable output safely'],
+  ['Storage', 'Charge batteries, thermal or pumped storage'],
+  ['Productive flexible demand', 'Cooling, water, EVs, industry and hydrogen']
+];
+
+function use(remaining, available) {
+  const amount = Math.min(Math.max(remaining, 0), Math.max(available, 0));
+  return [amount, remaining - amount];
+}
+
+function scenario() {
+  const generation = baseline.generation * +$('generationScale').value / 100;
+  const demand = baseline.demand * +$('demandScale').value / 100;
+  const action = +$('actionScale').value / 100;
+  const flexScale = +$('flexScale').value / 100;
+  const initial = Math.max(0, generation - demand);
+  let remaining = initial;
+  let transfer, redispatch, storage, flex;
+  [transfer, remaining] = use(remaining, baseline.transfer * action);
+  [redispatch, remaining] = use(remaining, baseline.redispatch * action);
+  [storage, remaining] = use(remaining, baseline.storage * action);
+  [flex, remaining] = use(remaining, baseline.flex * flexScale);
+
+  $('generation').firstChild.textContent = `${fmt(generation)} `;
+  $('demand').firstChild.textContent = `${fmt(demand)} `;
+  $('excess').firstChild.textContent = `${fmt(initial)} `;
+  $('residual').firstChild.textContent = `${fmt(remaining)} `;
+  $('gv').textContent = `${fmt(generation)} MW`;
+  $('dv').textContent = `${fmt(demand)} MW`;
+  $('av').textContent = `${Math.round(action * 100)}%`;
+  $('fv').textContent = `${fmt(baseline.flex * flexScale)} MW`;
+  $('transfer').textContent = fmt(transfer);
+  $('redispatch').textContent = fmt(redispatch);
+  $('storage').textContent = fmt(storage);
+  $('flex').textContent = fmt(flex);
+
+  const stages = [
+    ['Initial excess', initial], ['Transfer', transfer], ['Redispatch', redispatch],
+    ['Storage', storage], ['Flexible loads', flex], ['Residual', remaining]
+  ];
+  const max = Math.max(1, initial);
+  $('waterfall').innerHTML = stages.map(([name, value], index) =>
+    `<div class="asset"><label>${name}</label><div class="track"><i style="width:${100 * value / max}%"></i></div><b>${fmt(value)} MW</b></div>`
+  ).join('');
+  draw(generation, demand);
+}
+
+function draw(generation, demand) {
+  const svg = $('chart'), width = 900, height = 285, pad = 18;
+  const rows = Array.from({length: 49}, (_, index) => {
+    const hour = index / 2;
+    const solarShape = Math.max(0, Math.sin((hour - 6) / 12 * Math.PI));
+    const demandShape = .91 + .07 * Math.sin((hour - 8) / 24 * Math.PI * 2) + .08 * Math.exp(-((hour - 20) ** 2) / 10);
+    return {g: generation * (.91 + .09 * solarShape), d: demand * demandShape};
+  });
+  const maximum = Math.max(...rows.flatMap(row => [row.g, row.d]));
+  const path = key => rows.map((row, index) => `${index ? 'L' : 'M'} ${pad + index * (width - 2 * pad) / (rows.length - 1)} ${height - row[key] / maximum * (height - 30)}`).join(' ');
+  svg.innerHTML = Array.from({length: 6}, (_, index) => {
+    const y = height - index / 5 * (height - 30);
+    return `<line x1="${pad}" y1="${y}" x2="${width-pad}" y2="${y}" stroke="#173247"/>`;
+  }).join('') + `<path d="${path('g')}" fill="none" stroke="#ffc75a" stroke-width="3"/><path d="${path('d')}" fill="none" stroke="#55a7ff" stroke-width="3"/>`;
+}
+
+$('assets').innerHTML = resources.map(([name, detail]) => `<div class="asset"><label>${name}</label><div class="track"><i style="width:100%"></i></div><b title="${detail}">Eligible</b></div>`).join('');
+['generationScale', 'demandScale', 'actionScale', 'flexScale'].forEach(id => $(id).addEventListener('input', scenario));
+$('reset').addEventListener('click', () => {
+  $('generationScale').value = $('demandScale').value = $('actionScale').value = $('flexScale').value = 100;
+  scenario();
+});
+scenario();
