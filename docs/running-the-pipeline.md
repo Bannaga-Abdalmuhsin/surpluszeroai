@@ -4,7 +4,7 @@
 python -m venv .venv
 source .venv/bin/activate
 pip install -e . pytest
-surpluszero --config config/riyadh_demo.json --output output/riyadh_demo
+surpluszero --config config/riyadh_demo.json --output output/riyadh_demo --web-data web/data/demo.json
 pytest
 ```
 
