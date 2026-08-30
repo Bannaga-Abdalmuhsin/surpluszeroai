@@ -2,6 +2,8 @@
 
 **Predictive load orchestration for near-zero avoidable renewable-energy curtailment in Saudi Arabia.**
 
+[Open the SurplusZero dashboard](https://bannaga-abdalmuhsin.github.io/surpluszeroai/)
+
 SurplusZero AI converts distributed flexible loads into a **Virtual Energy Reservoir**. It forecasts periods when available electricity may exceed normal demand, reserves suitable flexible loads before the event, dispatches them when needed, verifies their actual response, and reallocates any shortfall.
 
 > Every usable surplus kilowatt-hour should be directed to its highest-value available use before curtailment becomes necessary.
