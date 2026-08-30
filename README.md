@@ -190,6 +190,7 @@ SurplusZero aims for **near-zero avoidable curtailment**, not an absolute guaran
 - [System architecture](docs/architecture.md)
 - [Official data catalogue](docs/data-sources.md)
 - [Prototype and roadmap](docs/roadmap.md)
+- [Run the Riyadh data pipeline](docs/running-the-pipeline.md)
 
 ## Project status
 

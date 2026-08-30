@@ -1,0 +1,13 @@
+{
+  "zone_name":"Riyadh Surplus Absorption Zone",
+  "latitude":24.7136,"longitude":46.6753,"timezone":"Asia/Riyadh","weather_date":"2024-06-15",
+  "pv_capacity_mw":5.0,"pv_performance_ratio":0.82,"zone_average_demand_mw":2.2,
+  "export_capacity_mw":0.0,"scheduled_storage_mw":0.0,"forecast_uncertainty_fraction":0.15,
+  "flexible_assets":[
+    {"id":"cooling-01","type":"building_cooling","capacity_mw":0.8,"energy_mwh":1.6,"cost_sar_mwh":35},
+    {"id":"water-01","type":"water_pumping","capacity_mw":0.65,"energy_mwh":1.95,"cost_sar_mwh":25},
+    {"id":"ev-01","type":"ev_charging","capacity_mw":0.45,"energy_mwh":1.35,"cost_sar_mwh":30},
+    {"id":"battery-01","type":"battery","capacity_mw":0.75,"energy_mwh":1.5,"cost_sar_mwh":55},
+    {"id":"cold-01","type":"cold_storage","capacity_mw":0.35,"energy_mwh":1.05,"cost_sar_mwh":28}
+  ]
+}
