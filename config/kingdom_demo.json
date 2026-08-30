@@ -3,6 +3,8 @@
   "evidence_status": "Illustrative operational scenario; not live grid telemetry",
   "interval_minutes": 15,
   "official_context": {
+    "grid_peak_load_2024_mw": 74800,
+    "grid_peak_load_source": "Saudi Electricity Company FY 2024 earnings release",
     "renewable_capacity_2024_mw": 6551,
     "solar_capacity_2024_mw": 6151,
     "wind_capacity_2024_mw": 400,
@@ -10,8 +12,8 @@
   },
   "zones": ["Central", "Eastern", "Western", "Southern"],
   "baseline_mw": {
-    "generation_all_sources": 68400,
-    "demand": 66500,
+    "generation_all_sources": 76700,
+    "demand": 74800,
     "transfer_to_deficit_zone": 350,
     "safe_generation_redispatch": 450,
     "storage_charging": 300,
@@ -20,7 +22,8 @@
   },
   "provenance": {
     "official_context": "official",
-    "baseline_mw": "assumed",
+    "baseline_mw.generation_all_sources": "assumed",
+    "baseline_mw.demand": "official",
     "waterfall_result": "calculated"
   }
 }

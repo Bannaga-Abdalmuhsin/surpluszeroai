@@ -7,7 +7,7 @@ SurplusZero needs two distinct layers of data. Public open data makes the nation
 | Input | Resolution | Why it is needed | Prototype fallback |
 |---|---:|---|---|
 | Generation by source and grid zone | 5–15 min | Total injections and forecast error | Transparent scenario calibrated to official totals |
-| Demand by grid zone | 5–15 min | Detect current/forecast imbalance | Synthetic shape scaled to official peak/consumption |
+| Demand by grid zone | 5–15 min | Detect current/forecast imbalance | Modeled shape anchored to the actual 2024 grid peak of 74,800 MW |
 | Interconnector and corridor flows/limits | 5–15 min | Determine whether excess can move | Assumed zonal transfer limits |
 | Unit ramp and minimum stable output | Event/current | Bound safe redispatch | Representative plant constraints |
 | Required operating reserves | 5–15 min | Preserve system security | Explicit reserve constraint |

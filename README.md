@@ -77,7 +77,7 @@ See [solution inputs](docs/solution-inputs.md) and the [official data catalogue]
 - **Forecast:** model output with uncertainty.
 - **Assumed:** transparent scenario value awaiting operational access.
 
-The national dashboard is a digital-twin scenario, not a claim of live Saudi grid operation. The earlier Riyadh 5 MW solar example remains a local proof that forecasting, dispatch, metering, and shortfall reallocation can work; it is not the scope or national result of SurplusZero.
+The national dashboard anchors demand to the actual published 2024 Saudi grid peak of **74.8 GW**. Slider-adjusted demand is explicitly modeled from that official value; generation and grid actions remain scenario inputs until synchronized EMS/SCADA data is available. The dashboard is therefore not a claim of live Saudi grid operation. The earlier Riyadh 5 MW solar example remains a local proof that forecasting, dispatch, metering, and shortfall reallocation can work; it is not the scope or national result of SurplusZero.
 
 ## Why it is special and doable
 

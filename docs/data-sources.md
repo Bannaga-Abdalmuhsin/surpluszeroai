@@ -28,7 +28,7 @@ curl -X GET \
 | Total electricity users | `eae27e00-386a-4212-9cd6-3087fb42c5e3` | 2017–2024, yearly | Year; user count | Connected-customer growth |
 | Electricity consumption by category | `5e4851e8-7af1-4bfb-904f-c03dda024acb` | 2023–2024, yearly | Category; energy sold | Sector opportunity and flexibility sizing |
 | Average/percentage customer consumption | `f12628ed-d4cb-49d1-8618-4957dc848c97` | 2023, yearly | Year; consumption | Cross-check average consumption; terminology requires file validation |
-| Peak Load | `004003e8-343c-4eee-90bc-71370570dcdd` | 2017–2024, yearly | Year; peak load; unit in 2024 resource | Calibrate maximum national demand |
+| Peak Load | `004003e8-343c-4eee-90bc-71370570dcdd` | 2017–2024, yearly | Year; peak load; unit in 2024 resource | Calibrate maximum national demand; cross-checked 2024 grid peak: 74.8 GW |
 
 Landing pages follow:
 

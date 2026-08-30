@@ -1,7 +1,7 @@
 const $ = id => document.getElementById(id);
 const fmt = value => Math.round(value).toLocaleString('en-US');
 const baseline = {
-  generation: 68400, demand: 66500, transfer: 350,
+  generation: 76700, demand: 74800, transfer: 350,
   redispatch: 450, storage: 300, flex: 650
 };
 const resources = [
@@ -31,10 +31,12 @@ function scenario() {
 
   $('generation').firstChild.textContent = `${fmt(generation)} `;
   $('demand').firstChild.textContent = `${fmt(demand)} `;
+  $('demandProvenance').textContent = $('demandScale').value === '100' ? 'Official actual peak' : 'Modeled from official peak';
+  $('demandProvenance').className = $('demandScale').value === '100' ? 'measured' : '';
   $('excess').firstChild.textContent = `${fmt(initial)} `;
   $('residual').firstChild.textContent = `${fmt(remaining)} `;
   $('gv').textContent = `${fmt(generation)} MW`;
-  $('dv').textContent = `${fmt(demand)} MW`;
+  $('dv').textContent = $('demandScale').value === '100' ? `${fmt(demand)} MW official` : `${fmt(demand)} MW modeled`;
   $('av').textContent = `${Math.round(action * 100)}%`;
   $('fv').textContent = `${fmt(baseline.flex * flexScale)} MW`;
   $('transfer').textContent = fmt(transfer);
@@ -58,7 +60,7 @@ function draw(generation, demand) {
   const rows = Array.from({length: 49}, (_, index) => {
     const hour = index / 2;
     const solarShape = Math.max(0, Math.sin((hour - 6) / 12 * Math.PI));
-    const demandShape = .91 + .07 * Math.sin((hour - 8) / 24 * Math.PI * 2) + .08 * Math.exp(-((hour - 20) ** 2) / 10);
+    const demandShape = Math.min(1, .87 + .06 * Math.sin((hour - 8) / 24 * Math.PI * 2) + .08 * Math.exp(-((hour - 20) ** 2) / 10));
     return {g: generation * (.91 + .09 * solarShape), d: demand * demandShape};
   });
   const maximum = Math.max(...rows.flatMap(row => [row.g, row.d]));
